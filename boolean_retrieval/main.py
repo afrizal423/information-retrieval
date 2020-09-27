@@ -2,6 +2,7 @@ import re
 import os
 import collections
 import time
+import json
 
 # This is the map where dictionary terms will be stored as keys and value will be posting list with position in the file
 dictionary = {}
@@ -23,7 +24,7 @@ class index:
         """
             membuat 2 file txt
             frekuensi.txt untuk menampilkan frekuensi kemunculan suatu kata
-            matrix.txt untuk menampilkan kata tersebut masuk kedalam file txt mana
+            matrix.txt untuk menampilkan kata tersebut masuk kedalam file dokumen .txt mana
         """
         fileobj = open('frekuensi.txt', 'w')
         fileobj1 = open('matrix.txt', 'w')
@@ -81,7 +82,184 @@ class index:
             fileobj.write(w +"   |   "+str(length_dict[w]))
             fileobj.write("\n")
         fileobj.close()
+
+        """
+            Membuat file matrix.txt
+        """
         
+        firstLine = "          **|**   "
+        for d in docIdMap:
+            firstLine = firstLine + " | " +str(d)
+        fileobj1.write(firstLine+"   **|** ")
+        fileobj1.write('\n')
+        fileobj1.write('\n')
+        for t in dictionary:
+            poList = dictionary[t]
+            kList = []
+            for keys in poList:
+                kList.append(keys)
+            line = "       "
+
+            for d in docIdMap:
+                """
+                    disini menggunakan boolean yang dimana kita cek apakah dari
+                    kata tersebut masuk kedalam doc txt yang mana
+                    contoh:
+                    inisebuahkata  **|**        | 1 | 1 | 1 | 0 | 0
+                    yang artinya
+                    dari kata "inisebuahkata" itu ada di file .txt ke 1,2,3
+                """
+                if d in kList:
+                    line = line + " | " + "1"
+                else:
+                    line = line + " | " + "0"
+
+            fileobj1.write(t+"  **|**"+line)
+            fileobj1.write('\n')
+        fileobj1.close()
+    
+    def lihat_jumlah(self, nama_file, query):
+        docId = 1
+        temp_dictionary = {}
+        lines = [line.rstrip('\n') for line in open(self.path + "/" + nama_file)]
+            # print(lines) #pembuktian
+        position = 1
+        for eachLine in lines:
+            wordList = re.split('\W+', eachLine)
+            """
+            Di variable bawah ini kita akan memisahkan tiap kata-kata dalam 1 baris kalimat tersebut
+            """
+                
+                # print(wordList) #pembuktian
+            while '' in wordList:
+                wordList.remove('')
+                    # print("kita hapus spasi/tanda lain ", wordList) #pembuktian
+                
+            for word in wordList:
+                if (word.lower() in temp_dictionary):
+                    postingList = temp_dictionary[word.lower()]
+                    if (docId in postingList):
+                        postingList[docId].append(position)
+                        position = position + 1
+                    else:
+                        postingList[docId] = [position]
+                        position = position + 1
+                else:
+                    temp_dictionary[word.lower()] = {docId: [position]}
+                    position = position + 1
+                   
+                
+            docId = docId + 1
+        length_dict = {key: len(value) for key, value in temp_dictionary.items()}
+        """
+        Membuat file frekuensi.txt
+        """
+        # print(temp_dictionary.items())
+        # print(length_dict)
+        for key in temp_dictionary:
+            # print(key + " --> " + str(temp_dictionary[key])) # pembuktian
+            # print(str(temp_dictionary[key]))
+            if str(key) == query:
+                # print(len(temp_dictionary[key]))
+                # print(key + " --> " + str(temp_dictionary[key])) # pembuktian
+                for s, value in temp_dictionary[key].items():
+                    # print(s)
+                    print("Ditemukan di line "+str(s)+" dengan jumlah katanya "+str(len(temp_dictionary[key][s])))
+                    # print(temp_dictionary[key][s])
+                    # print(len(temp_dictionary[key][s]))
+                    pass
+                
+        for key, value in temp_dictionary.items():
+            if str(key) == query:
+                # print(value)
+                pass
+                # print(json.dumps(value, indent = 4))
+                for a in value:
+                    pass
+                    # print(json.dumps(a, indent = 4))
+                # print(key +"   |   "+str(length_dict[key]))
+        for w in length_dict:
+            # ini nanti dibuat menangkap jumlah kata di suatu file txt
+            if str(w) == query:
+                print("Kata '"+w +"' terdapat "+str(length_dict[w])+" baris")
+            
+        
+
+    def and_query(self, query_terms):
+        if len(query_terms) == 1:
+            """
+            Jika panjang query_terms sama dengan 1, Ini akan mendapatkan posting list yang hanya satu query/kata istilah. 
+            Jika tidak ada hasil yang ditemukan, pesan yang tidak sesuai akan dicetak. 
+            Jika tidak, cetak nama file masing-masing dengan traversing map docIdToFileName untuk semua posting list
+            """
+            resultList = self.getPostingList(query_terms[0])
+            if not resultList:
+                print("")
+                printString = "Hasil untuk Query : " + query_terms[0]
+                print(printString)
+                print("0 dokumen / tidak ada yang cocok ")
+                return
+
+            else:
+                print("")
+                printString = "Hasil untuk Query : " + query_terms[0]
+                print(printString)
+                print("Total dokumen yang diambil: " + str(len(resultList)))
+                for items in resultList:
+                    print(docIdMap[items])
+                    self.lihat_jumlah(docIdMap[items], query_terms[0])    
+
+        else:
+            """
+            Jika ada lebih dari 1 item di query_terms, itu akan mendapatkan posting list untuk istilah/kata pertama dan kedua. 
+            Kemudian panggil mergePostingList () dengan meneruskan posting list term0 dan term1. 
+            Hasil penggabungan akan digunakan untuk mendapatkan perpotongan dari posting list term3. 
+            Ini akan diulangi untuk semua istilah kueri berikutnya.
+            """
+            resultList = []
+            for i in range(1, len(query_terms)):
+                if (len(resultList) == 0):
+                    resultList = self.mergePostingList(self.getPostingList(query_terms[0]),
+                                                       self.getPostingList(query_terms[i]))
+                else:
+                    resultList = self.mergePostingList(resultList, self.getPostingList(query_terms[i]))
+            print("")
+            printString = "Hasil untuk Query (AND query) :"
+            i = 1
+            for keys in query_terms:
+                if (i == len(query_terms)):
+                    printString += " " + str(keys)
+                else:
+                    printString += " " + str(keys) + ""
+                    i = i + 1
+
+            print(printString)
+            print("Total dokumen yang diambil : " + str(len(resultList)))
+            print(resultList)
+            for items in resultList:
+                print(docIdMap[items])
+
+    def getPostingList(self, term):
+        if (term in dictionary):
+            print("term", term) #pembuktian
+            postingList = dictionary[term]
+            keysList = []
+            for keys in postingList:
+                keysList.append(keys)
+            print(keysList) #pembuktian
+            keysList.sort()
+            
+            return keysList
+        else:
+            return None
+
+    def mergePostingList(self, list1, list2):
+        print(list1, list2) #pembuktian list
+        mergeResult = list(set(list1) & set(list2))
+        print("sort",mergeResult) #pembuktian hasil sort
+        mergeResult.sort()
+        return mergeResult
+
     def print_dict(self):
         """
             Fungsi ini menampilkan kata berapa kali dalam sebuah dokumen dan list posting yang ada di index
@@ -98,8 +276,10 @@ class index:
             print("Doc ID: " + str(key) + " ==> " + str(docIdMap[key]))
 
 def main():
-    AlamatDir = input("Masukkan nama direktori text / datasetnya  : ")
+    # AlamatDir = input("Masukkan nama direktori text / datasetnya  : ")
     # queryFile = input("Masukkan nama file untuk querynya : ")
+    AlamatDir = "test"
+    queryFile = "query"
     indexObj = index(AlamatDir)
     indexObj.proses_pertama()
 
@@ -112,17 +292,17 @@ def main():
     indexObj.print_doc_list()
     print("")
 
-    # QueryLines = [line.rstrip('\n') for line in open(queryFile)]
-    # for eachLine in QueryLines:
-    #     wordList = re.split('\W+', eachLine)
+    QueryLines = [line.rstrip('\n') for line in open(queryFile)]
+    for eachLine in QueryLines:
+        wordList = re.split('\W+', eachLine)
 
-    #     while '' in wordList:
-    #         wordList.remove('')
+        while '' in wordList:
+            wordList.remove('')
 
-    #     wordsInLowerCase = []
-    #     for word in wordList:
-    #         wordsInLowerCase.append(word.lower())
-    #     indexObj.and_query(wordsInLowerCase)
+        wordsInLowerCase = []
+        for word in wordList:
+            wordsInLowerCase.append(word.lower())
+        indexObj.and_query(wordsInLowerCase)
 
 if __name__ == '__main__':
     main()
