@@ -81,7 +81,21 @@ class index:
             fileobj.write(w +"   |   "+str(length_dict[w]))
             fileobj.write("\n")
         fileobj.close()
-    
+        
+    def print_dict(self):
+        """
+            Fungsi ini menampilkan kata berapa kali dalam sebuah dokumen dan list posting yang ada di index
+        """
+        fileobj = open("invertedIndex.txt", 'w')
+        for key in dictionary:
+            # print(key + " --> " + str(dictionary[key])) # pembuktian
+            fileobj.write(key + " --> " + str(dictionary[key]))
+            fileobj.write("\n")
+        fileobj.close()
+
+    def print_doc_list(self):
+        for key in docIdMap:
+            print("Doc ID: " + str(key) + " ==> " + str(docIdMap[key]))
 
 def main():
     AlamatDir = input("Masukkan nama direktori text / datasetnya  : ")
@@ -90,13 +104,13 @@ def main():
     indexObj.proses_pertama()
 
     # print("")
-    # # print("Inverted Index :")
+    # print("Inverted Index :")
     # indexObj.print_dict()
 
-    # print("")
-    # print("List Dokumen :")
-    # indexObj.print_doc_list()
-    # print("")
+    print("")
+    print("List Dokumen :")
+    indexObj.print_doc_list()
+    print("")
 
     # QueryLines = [line.rstrip('\n') for line in open(queryFile)]
     # for eachLine in QueryLines:
