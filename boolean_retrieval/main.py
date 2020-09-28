@@ -3,6 +3,7 @@ import os
 import collections
 import time
 import json
+import string
 
 # This is the map where dictionary terms will be stored as keys and value will be posting list with position in the file
 dictionary = {}
@@ -186,6 +187,7 @@ class index:
         
 
     def and_query(self, query_terms):
+        # print(len(query_terms))
         if len(query_terms) == 1:
             """
             Jika panjang query_terms sama dengan 1, Ini akan mendapatkan posting list yang hanya satu query/kata istilah. 
@@ -216,28 +218,85 @@ class index:
             Hasil penggabungan akan digunakan untuk mendapatkan perpotongan dari posting list term3. 
             Ini akan diulangi untuk semua istilah kueri berikutnya.
             """
-            resultList = []
-            for i in range(1, len(query_terms)):
-                if (len(resultList) == 0):
-                    resultList = self.mergePostingList(self.getPostingList(query_terms[0]),
-                                                       self.getPostingList(query_terms[i]))
-                else:
-                    resultList = self.mergePostingList(resultList, self.getPostingList(query_terms[i]))
-            print("")
-            printString = "Hasil untuk Query (AND query) :"
-            i = 1
-            for keys in query_terms:
-                if (i == len(query_terms)):
-                    printString += " " + str(keys)
-                else:
-                    printString += " " + str(keys) + ""
-                    i = i + 1
+            or_operator = 'or'
+            and_operator = 'and'
 
-            print(printString)
-            print("Total dokumen yang diambil : " + str(len(resultList)))
-            print(resultList)
-            for items in resultList:
+            clauses = query_terms.split(and_operator)
+            or_terms = clauses[0].split(or_operator)
+
+            # resultList = []
+            doc_ids = set()
+            for term in or_terms:
+                try:
+                    # print(term.replace(" ", ""))
+                    a = term.replace(" ", "")
+                    doc_ids.update(self.getPostingList(self.filter_string(a)))
+                # print(term)
+                except KeyError:
+                    pass
+            # print(len(clauses))
+            
+            for i in range(1, len(clauses)):
+                or_terms = clauses[i].split(or_operator)
+                # print("orr ",or_terms)
+                clause_ids = set()
+
+                for term in or_terms:
+                    try:
+                        # print(term)
+                        a = term.replace(" ", "")
+                        clause_ids.update(self.getPostingList(self.filter_string(a)))
+                    except KeyError:
+                        pass
+
+                doc_ids = doc_ids.intersection(clause_ids)
+            # print(doc_ids)
+            
+            """
+            Kodingan lama
+            """
+
+            # for i in range(1, len(query_terms)):
+            #     if (len(resultList) == 0):
+            #         resultList = self.mergePostingList(self.getPostingList(query_terms[0]),
+            #                                            self.getPostingList(query_terms[i]))
+            #     else:
+            #         resultList = self.mergePostingList(resultList, self.getPostingList(query_terms[i]))
+            # print(resultList)
+            # print("")
+            # printString = "Hasil untuk Query (AND query) :"
+            # i = 1
+            # for keys in query_terms:
+            #     if (i == len(query_terms)):
+            #         printString += " " + str(keys)
+            #     else:
+            #         printString += " " + str(keys) + ""
+            #         i = i + 1
+
+            # print(printString)
+            print("Total dokumen yang diambil : " + str(len(doc_ids)))
+            # print(resultList)
+            for items in doc_ids:
                 print(docIdMap[items])
+                self.lihat_jumlah(docIdMap[items], self.filter_string(query_terms))  
+
+    """
+            Kodingan baru
+    """
+    def filter_string(self, in_string):
+        """ Convert the data to lowercase and remove punctuation.
+            Input:
+                in_string: A string.
+            Output:
+                out_string: The in_string converted to lowercase and stripped
+                    of punctuation.
+        """
+        in_string = in_string .lower()
+
+        table = str.maketrans({key: None for key in string.punctuation})
+        out_string = in_string.translate(table)
+
+        return out_string
 
     def getPostingList(self, term):
         if (term in dictionary):
@@ -294,15 +353,22 @@ def main():
 
     QueryLines = [line.rstrip('\n') for line in open(queryFile)]
     for eachLine in QueryLines:
-        wordList = re.split('\W+', eachLine)
+        """
+            Kodingan lama
+        """
+        # wordList = re.split('\W+', eachLine)
 
-        while '' in wordList:
-            wordList.remove('')
+        # while '' in wordList:
+        #     wordList.remove('')
 
-        wordsInLowerCase = []
-        for word in wordList:
-            wordsInLowerCase.append(word.lower())
-        indexObj.and_query(wordsInLowerCase)
+        # wordsInLowerCase = []
+        # for word in wordList:
+        #     wordsInLowerCase.append(word.lower())
+        """
+            Kodingan baru
+            nnati dignati variable wordsInLowerCase kalo ingin kembali lagi
+        """
+        indexObj.and_query(eachLine)
 
 if __name__ == '__main__':
     main()
