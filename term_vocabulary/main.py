@@ -158,6 +158,9 @@ class index:
         for key in temp_dictionary:
             # print(key + " --> " + str(temp_dictionary[key])) # pembuktian
             # print(str(temp_dictionary[key]))
+            """
+            	disini proses stemming buat pencocokan dari stemming inputan dengan stemming dari dokumen
+            """
             if str(key) == query:
                 # print(len(temp_dictionary[key]))
                 # print(key + " --> " + str(temp_dictionary[key])) # pembuktian
