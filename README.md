@@ -4,4 +4,4 @@ Kumpulan tugas mata kuliah Information Retrieval semester ganjil tahun ajaran 20
 - boolean retrieval
 - term vocabulary
 - TF/IDF
-- VSM (vailed)
+- VSM (<b>failed</b>)
